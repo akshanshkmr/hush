@@ -255,12 +255,15 @@
       master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
       buffers.white=noiseBuffer("white",4);buffers.pink=noiseBuffer("pink",4);buffers.brown=noiseBuffer("brown",4);
       SOUNDS.forEach(s=>{const g=ctx.createGain();g.gain.value=0;g.connect(master);layers[s.key].gain=g;});
-      // tie the silent keepalive <audio> into the WebAudio graph so iOS keeps
-      // the session alive when the screen locks or app is backgrounded
-      try{const _ka=document.getElementById("silentkeepalive");
-        if(_ka){_ka.play().catch(()=>{});const _ks=ctx.createMediaElementSource(_ka);_ks.connect(ctx.destination);}}catch(e){}
+      // 1) Silent WAV plays INDEPENDENTLY of WebAudio — keeps iOS audio session open
+      //    even when the AudioContext itself is suspended.
+      try{const _ka=document.getElementById("silentkeepalive");if(_ka)_ka.play().catch(()=>{});}catch(e){}
+      // 2) Pipe WebAudio master output through a MediaStream into an <audio> element.
+      //    iOS sees a live media element and won't tear down the audio session.
+      try{const _d=ctx.createMediaStreamDestination();master.connect(_d);
+        const _a=new Audio();_a.srcObject=_d.stream;_a.play().catch(()=>{});}catch(e){}
       // heartbeat: re-resume if iOS silently suspends us while playing
-      setInterval(()=>{if(ctx.state==="suspended"&&playing)ctx.resume();},8000);
+      setInterval(()=>{if(ctx.state==="suspended"&&playing)ctx.resume();},5000);
       setupMediaSession();
     }
     if(ctx.state==="suspended") ctx.resume();
@@ -487,7 +490,11 @@
   document.getElementById("customSet").addEventListener("click",()=>{const v=parseInt(document.getElementById("customMin").value,10);
     if(!v||v<1)return;setTimer(v);closeTimer();});
 
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ctx&&ctx.state==="suspended"&&playing)ctx.resume();});
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden) return;
+    if(ctx&&ctx.state==="suspended"&&playing) ctx.resume();
+    try{const _ka=document.getElementById("silentkeepalive");if(_ka&&_ka.paused)_ka.play().catch(()=>{});}catch(e){}
+  });
 })();
 </script>
 </body>
