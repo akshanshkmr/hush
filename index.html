@@ -376,20 +376,11 @@
     function strike(){if(!alive)return;const t=ctx.currentTime;
       // bias toward nearer strikes and a tighter range so every one reads clearly as thunder
       const dist=Math.random()*0.7,near=dist<0.55,loud=1.0-0.45*dist;
-      // 1) CRACK — near strikes get a sharp bright transient + scattered crackles
-      if(near){const amp=(0.9-dist)*1.0;
-        const cl=shotSrc("white");const clh=ctx.createBiquadFilter();clh.type="highpass";clh.frequency.value=1500;
-        const clg=ctx.createGain();clg.gain.setValueAtTime(.0001,t);clg.gain.exponentialRampToValueAtTime(amp,t+.004);
-        clg.gain.exponentialRampToValueAtTime(.0001,t+.18);cl.connect(clh);clh.connect(clg);clg.connect(out);cl.start(t);cl.stop(t+.4);
-        for(let i=0;i<4;i++){const ct=t+.02+Math.random()*.35;const cc=shotSrc("white");
-          const ch=ctx.createBiquadFilter();ch.type="bandpass";ch.frequency.value=1800+Math.random()*3000;ch.Q.value=.7;
-          const cg=ctx.createGain();cg.gain.setValueAtTime(.0001,ct);cg.gain.exponentialRampToValueAtTime(amp*(.3+Math.random()*.5),ct+.005);
-          cg.gain.exponentialRampToValueAtTime(.0001,ct+.05+Math.random()*.08);cc.connect(ch);ch.connect(cg);cg.connect(out);cc.start(ct);cc.stop(ct+.3);}}
-      // 2) BOOM — sub-bass chest thump swooping down
+      // BOOM — sub-bass chest thump swooping down
       const sub=ctx.createOscillator();sub.type="sine";sub.frequency.setValueAtTime(near?75:50,t);sub.frequency.exponentialRampToValueAtTime(28,t+.9);
       const subg=ctx.createGain();subg.gain.setValueAtTime(.0001,t);subg.gain.exponentialRampToValueAtTime(loud*.9,t+(near?.03:.15));
       subg.gain.exponentialRampToValueAtTime(.0001,t+1.6);sub.connect(subg);subg.connect(out);sub.start(t);sub.stop(t+1.8);
-      // 3) RUMBLE — brown noise, lowpass drifting down, with irregular rolling swells
+      // RUMBLE — brown noise, lowpass drifting down, with irregular rolling swells
       const dur=3.0+Math.random()*3.5;const s=shotSrc("brown");const lp=ctx.createBiquadFilter();lp.type="lowpass";
       lp.frequency.setValueAtTime(near?450:220,t);lp.frequency.exponentialRampToValueAtTime(90,t+dur);
       const g=ctx.createGain();g.gain.setValueAtTime(.0001,t);let tt=t+(near?.05:.25);
@@ -402,27 +393,28 @@
     timer=setTimeout(strike,400+Math.random()*1200);
     return()=>{alive=false;if(timer)clearTimeout(timer);try{rumble.stop()}catch(e){}};}
   function fire(out){let alive=true,t1=null,t2=null;
-    // low roar bed, flickering (flames breathing)
-    const bed=loopSrc("brown");const blp=ctx.createBiquadFilter();blp.type="lowpass";blp.frequency.value=420;
-    const bg=ctx.createGain();bg.gain.value=.16;bed.connect(blp);blp.connect(bg);bg.connect(out);bed.start();
-    const fl=ctx.createOscillator();fl.type="sine";fl.frequency.value=.7;const fla=ctx.createGain();fla.gain.value=.07;fl.connect(fla);fla.connect(bg.gain);fl.start();
-    // airy hiss layer, slower flicker
-    const hiss=loopSrc("pink");const hbp=ctx.createBiquadFilter();hbp.type="bandpass";hbp.frequency.value=1600;hbp.Q.value=.6;
-    const hg=ctx.createGain();hg.gain.value=.05;hiss.connect(hbp);hbp.connect(hg);hg.connect(out);hiss.start();
-    const hl=ctx.createOscillator();hl.type="sine";hl.frequency.value=.4;const hla=ctx.createGain();hla.gain.value=.03;hl.connect(hla);hla.connect(hg.gain);hl.start();
-    // crackle: short resonant snap — bandpass gives it wood-pop body, not a bare click
-    function crackle(amp){const t=ctx.currentTime,off=Math.random()*.05;const c=shotSrc("white");
-      const bp=ctx.createBiquadFilter();bp.type="bandpass";bp.frequency.value=800+Math.random()*2600;bp.Q.value=1.2+Math.random()*3;
-      const g=ctx.createGain();g.gain.setValueAtTime(.0001,t+off);g.gain.exponentialRampToValueAtTime(amp,t+off+.003);
-      g.gain.exponentialRampToValueAtTime(.0001,t+off+.02+Math.random()*.05);
-      c.connect(bp);bp.connect(g);g.connect(out);c.start(t+off);c.stop(t+off+.2);}
-    function tick(){if(!alive)return;crackle(.05+Math.random()*.18);t1=setTimeout(tick,25+Math.random()*160);}
-    // occasional spit: a quick burst of 2–4 louder pops
-    function spit(){if(!alive)return;const n=2+Math.floor(Math.random()*3);
-      for(let i=0;i<n;i++)setTimeout(()=>{if(alive)crackle(.2+Math.random()*.45);},i*(30+Math.random()*50));
-      t2=setTimeout(spit,1800+Math.random()*4000);}
-    tick();spit();
-    return()=>{alive=false;if(t1)clearTimeout(t1);if(t2)clearTimeout(t2);stopAll([bed,hiss,fl,hl]);};}
+    // warm combustion roar: pink noise band-limited to a "shhh", double-flickering
+    const bed=loopSrc("pink");const bhp=ctx.createBiquadFilter();bhp.type="highpass";bhp.frequency.value=180;
+    const blp=ctx.createBiquadFilter();blp.type="lowpass";blp.frequency.value=900;
+    const bg=ctx.createGain();bg.gain.value=.14;bed.connect(bhp);bhp.connect(blp);blp.connect(bg);bg.connect(out);bed.start();
+    const fl=ctx.createOscillator();fl.type="sine";fl.frequency.value=.8;const fla=ctx.createGain();fla.gain.value=.06;fl.connect(fla);fla.connect(bg.gain);fl.start();
+    const fl2=ctx.createOscillator();fl2.type="sine";fl2.frequency.value=2.3;const fla2=ctx.createGain();fla2.gain.value=.03;fl2.connect(fla2);fla2.connect(bg.gain);fl2.start();
+    // deep ember bed
+    const emb=loopSrc("brown");const elp=ctx.createBiquadFilter();elp.type="lowpass";elp.frequency.value=200;
+    const eg=ctx.createGain();eg.gain.value=.10;emb.connect(elp);elp.connect(eg);eg.connect(out);emb.start();
+    // crackle: BROWN-noise snap (woody, not hissy) at low-mid freq, very short
+    function crackle(amp){const t=ctx.currentTime,off=Math.random()*.04;const c=shotSrc("brown");
+      const bp=ctx.createBiquadFilter();bp.type="bandpass";bp.frequency.value=350+Math.random()*1300;bp.Q.value=.8+Math.random()*1.4;
+      const g=ctx.createGain();g.gain.setValueAtTime(.0001,t+off);g.gain.exponentialRampToValueAtTime(amp,t+off+.002);
+      g.gain.exponentialRampToValueAtTime(.0001,t+off+.012+Math.random()*.035);
+      c.connect(bp);bp.connect(g);g.connect(out);c.start(t+off);c.stop(t+off+.12);}
+    function tick(){if(!alive)return;crackle(.05+Math.random()*.14);t1=setTimeout(tick,35+Math.random()*180);}
+    // occasional cluster of pops (a log settling)
+    function burst(){if(!alive)return;const n=3+Math.floor(Math.random()*4);
+      for(let i=0;i<n;i++)setTimeout(()=>{if(alive)crackle(.12+Math.random()*.28);},i*(25+Math.random()*55));
+      t2=setTimeout(burst,2600+Math.random()*4500);}
+    tick();burst();
+    return()=>{alive=false;if(t1)clearTimeout(t1);if(t2)clearTimeout(t2);stopAll([bed,emb,fl,fl2]);};}
   function heartbeat(out){let alive=true,t1=null;
     function thump(at,amp){const o=ctx.createOscillator();o.type="sine";o.frequency.setValueAtTime(70,at);
       o.frequency.exponentialRampToValueAtTime(40,at+.12);const g=ctx.createGain();
