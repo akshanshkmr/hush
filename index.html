@@ -169,11 +169,8 @@
   .selrow .ck svg{width:18px;height:18px;}
   .selrow[aria-selected="true"] .ck{opacity:1;}
   .dockcap{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--label2);flex:0 0 auto;}
-  .installbar{display:none;align-items:center;gap:10px;margin:10px 0 2px;padding:9px 10px 9px 14px;background:var(--card);border-radius:12px;}
-  .installbar.show{display:flex;}
-  .installbar .msg{flex:1;font-size:14px;color:var(--label2);}
-  .installbar .go{appearance:none;border:none;background:var(--tint);color:#fff;font-family:inherit;font-weight:600;font-size:13px;padding:8px 15px;border-radius:8px;cursor:pointer;min-height:36px;}
-  .installbar .x{appearance:none;border:none;background:none;color:var(--label3);font-size:20px;line-height:1;cursor:pointer;width:32px;height:32px;flex:0 0 auto;}
+  #btnInstall{display:none;}
+  #btnInstall.show{display:grid;}
   .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 96px);transform:translate(-50%,10px);
     background:rgba(50,50,52,.96);color:#fff;font-size:14px;font-weight:500;padding:11px 18px;border-radius:22px;
     box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:20;max-width:80%;text-align:center;}
@@ -192,6 +189,7 @@
     <div class="titlerow">
       <h1 class="largetitle">Hush</h1>
       <div class="navbtns">
+        <button class="navbtn" id="btnInstall" aria-label="Install Hush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></svg></button>
         <button class="navbtn" id="btnShuffle" aria-label="Shuffle mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4l3 3-3 3"/><path d="M3 7h4c3 0 4 10 7 10h4"/><path d="M18 14l3 3-3 3"/><path d="M3 17h4c1.6 0 2.6-1.8 3.6-3.8"/></svg></button>
         <button class="navbtn" id="btnBreathe" aria-label="Breathing pacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity=".5"/></svg></button>
         <button class="navbtn" id="btnTimer" aria-label="Sleep timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg></button>
@@ -202,11 +200,6 @@
   </header>
 
   <div class="content">
-    <div class="installbar" id="installbar">
-      <span class="msg" id="installMsg">Install Hush for offline use</span>
-      <button class="go" id="installBtn">Install</button>
-      <button class="x" id="installX" aria-label="Dismiss">&times;</button>
-    </div>
     <div class="grid" id="grid"></div>
   </div>
 
@@ -609,24 +602,22 @@
   // --- offline app shell ---
   if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
 
-  // --- install ---
-  const installbar=document.getElementById("installbar"),installBtn=document.getElementById("installBtn"),
-        installX=document.getElementById("installX"),installMsg=document.getElementById("installMsg");
+  // --- install (download icon; hidden in standalone/PWA mode) ---
+  const btnInstall=document.getElementById("btnInstall");
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   let deferredPrompt=null;
-  const showBar=()=>{if(!standalone&&!store.get("hush.installDismissed"))installbar.classList.add("show");};
-  const hideBar=()=>installbar.classList.remove("show");
+  const showInstall=()=>{if(!standalone)btnInstall.classList.add("show");};
+  const hideInstall=()=>btnInstall.classList.remove("show");
   // Android / Chromium: capture the real install prompt for one-tap install
-  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;showBar();});
-  window.addEventListener("appinstalled",()=>{hideBar();deferredPrompt=null;});
-  installBtn.addEventListener("click",async()=>{
-    if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;hideBar();}
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;showInstall();});
+  window.addEventListener("appinstalled",()=>{hideInstall();deferredPrompt=null;});
+  btnInstall.addEventListener("click",async()=>{
+    if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;hideInstall();}
     else if(isIOS){showToast("Tap the Share icon, then “Add to Home Screen”");}
     else{showToast("Use your browser menu → Install");}});
-  installX.addEventListener("click",()=>{hideBar();store.set("hush.installDismissed",true);});
-  // iOS has no beforeinstallprompt — surface the bar with tap-to-instructions
-  if(isIOS&&!standalone){installMsg.textContent="Add Hush to your Home Screen";installBtn.textContent="How";showBar();}
+  // iOS has no beforeinstallprompt — show the icon and give instructions on tap
+  if(isIOS&&!standalone)showInstall();
 })();
 </script>
 </body>
