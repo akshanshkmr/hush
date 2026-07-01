@@ -258,14 +258,6 @@
       // 1) Silent WAV plays INDEPENDENTLY of WebAudio — keeps iOS audio session open
       //    even when the AudioContext itself is suspended.
       try{const _ka=document.getElementById("silentkeepalive");if(_ka)_ka.play().catch(()=>{});}catch(e){}
-      // 2) Feed a sub-audible 1 Hz oscillator into a MediaStream <audio> element.
-      //    iOS sees live media playback and keeps the audio session open,
-      //    but we never connect master here — that would double-play every sound.
-      try{const _d=ctx.createMediaStreamDestination();
-        const _osc=ctx.createOscillator();const _og=ctx.createGain();
-        _og.gain.value=0.001;_osc.frequency.value=1;
-        _osc.connect(_og);_og.connect(_d);_osc.start();
-        const _a=new Audio();_a.srcObject=_d.stream;_a.play().catch(()=>{});}catch(e){}
       // heartbeat: re-resume if iOS silently suspends us while playing
       setInterval(()=>{if(ctx.state==="suspended"&&playing)ctx.resume();},5000);
       setupMediaSession();
