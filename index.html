@@ -155,6 +155,12 @@
   .selrow .ck{color:var(--tint);opacity:0;display:grid;place-items:center;}
   .selrow .ck svg{width:18px;height:18px;}
   .selrow[aria-selected="true"] .ck{opacity:1;}
+  .dockcap{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--label2);flex:0 0 auto;}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 96px);transform:translate(-50%,10px);
+    background:rgba(50,50,52,.96);color:#fff;font-size:14px;font-weight:500;padding:11px 18px;border-radius:22px;
+    box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:20;max-width:80%;text-align:center;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  .grabber{cursor:grab;}
   @media (prefers-reduced-motion: reduce){.bcircle{animation:none;transform:scale(.92);}*{transition:none !important;}}
 </style>
 </head>
@@ -183,7 +189,7 @@
       <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
       <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.2v14H7zm6.8 0H17v14h-3.2z"/></svg>
     </button>
-    <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/></svg></span>
+    <span class="dockcap">Master</span>
     <input type="range" id="vol" min="0" max="100" value="60" aria-label="Master volume" />
     <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg></span>
   </div>
@@ -215,6 +221,8 @@
     <div class="blabel" id="blabel">Breathe</div>
   </div>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
 (() => {
   "use strict";
@@ -223,6 +231,10 @@
     get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):(mem[k]??null);}catch(e){return mem[k]??null;}},
     set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){mem[k]=v;}}
   };
+
+  const toastEl=document.getElementById("toast");let toastTO=null;
+  function showToast(msg){toastEl.textContent=msg;toastEl.classList.add("show");
+    if(toastTO)clearTimeout(toastTO);toastTO=setTimeout(()=>toastEl.classList.remove("show"),2200);}
 
   const ICONS={
     rain:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13a4 4 0 0 1 .9-7.9 5 5 0 0 1 9.6-1.1A3.5 3.5 0 0 1 19 13"/><line x1="8" y1="17" x2="7" y2="20"/><line x1="12.5" y1="17" x2="11.5" y2="20"/><line x1="17" y1="17" x2="16" y2="20"/></svg>',
@@ -380,7 +392,9 @@
     L.tile.setAttribute("aria-label",L.active?`${labelOf(key)}, on, ${Math.round(v*100)} percent`:`${labelOf(key)}, off`);
     if(playing&&L.active&&L.gain)ramp(L.gain.gain,v,0.12);}
   function toggle(key){const L=layers[key];L.active=!L.active;L.tile.setAttribute("aria-pressed",L.active?"true":"false");
-    setLevel(key,L.level);if(L.active&&!playing){setPlaying(true);startFromSilence();}reconcile();}
+    setLevel(key,L.level);if(L.active&&!playing){setPlaying(true);startFromSilence();}
+    if(L.active&&!store.get("hush.hinted")){showToast("Drag a tile sideways to set its level");store.set("hush.hinted",true);}
+    reconcile();}
 
   const grid=document.getElementById("grid");
   SOUNDS.forEach(s=>{
@@ -459,7 +473,7 @@
     const name=(presetName.value||"").trim()||("Mix "+(getPresets().length+1));
     const snap={name,vol:userVol,layers:{}};
     SOUNDS.forEach(s=>{const L=layers[s.key];snap.layers[s.key]={active:L.active,level:L.level};});
-    const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";renderPresets();});
+    const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";renderPresets();showToast("Saved “"+name+"”");});
   function applyPreset(p){
     if(typeof p.vol==="number"){userVol=p.vol;vol.value=Math.round(userVol*100);vol.style.setProperty("--p",(userVol*100)+"%");}
     SOUNDS.forEach(s=>{const d=p.layers[s.key]||{active:false,level:.6};const L=layers[s.key];
@@ -489,6 +503,16 @@
   btnTimer.addEventListener("click",openTimer);
   document.getElementById("customSet").addEventListener("click",()=>{const v=parseInt(document.getElementById("customMin").value,10);
     if(!v||v<1)return;setTimer(v);closeTimer();});
+
+  // swipe the sheet down to dismiss (ignores drags on lists/inputs/buttons so scrolling still works)
+  function attachSheetSwipe(sheetEl,closeFn){let y0=null;
+    sheetEl.addEventListener("pointerdown",e=>{if(e.target.closest("input,button,.plist,.sellist"))return;
+      y0=e.clientY;sheetEl.style.transition="none";try{sheetEl.setPointerCapture(e.pointerId);}catch(_){}});
+    sheetEl.addEventListener("pointermove",e=>{if(y0==null)return;const dy=Math.max(0,e.clientY-y0);sheetEl.style.transform="translateY("+dy+"px)";});
+    const up=e=>{if(y0==null)return;const dy=Math.max(0,e.clientY-y0);y0=null;sheetEl.style.transition="";sheetEl.style.transform="";if(dy>80)closeFn();};
+    sheetEl.addEventListener("pointerup",up);
+    sheetEl.addEventListener("pointercancel",()=>{y0=null;sheetEl.style.transition="";sheetEl.style.transform="";});}
+  attachSheetSwipe(sheet,closeSheet);attachSheetSwipe(timerSheet,closeTimer);
 
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden) return;
