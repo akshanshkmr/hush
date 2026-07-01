@@ -279,7 +279,7 @@
       ambient.style.opacity=playing?"1":".4";}
     else ambient.style.opacity="0";}
 
-  let ctx=null,master=null,streamOut=null,playing=false,userVol=0.60;
+  let ctx=null,master=null,streamOut=null,playing=false,userVol=0.60,mixName=null;
   const buffers={};const layers={};
 
   function ensureCtx(){
@@ -443,7 +443,7 @@
       if(should&&!L.stop){L.stop=ENGINES[key](L.gain);ramp(L.gain.gain,L.level,0.6);}
       else if(should&&L.stop){ramp(L.gain.gain,L.level,0.25);}
       else if(!should&&L.stop){ramp(L.gain.gain,0,0.4);const s=L.stop;L.stop=null;setTimeout(()=>s(),460);}});
-    renderStatus();updateMediaState();updateAmbient();
+    renderStatus();updateMediaState();updateMediaMeta();updateAmbient();
     if(playing&&timerMin>0&&!timerEndsAt){startTimer();}
   }
 
@@ -457,6 +457,7 @@
     L.tile.setAttribute("aria-label",L.active?`${labelOf(key)}, on, ${Math.round(v*100)} percent`:`${labelOf(key)}, off`);
     if(playing&&L.active&&L.gain)ramp(L.gain.gain,v,0.12);}
   function toggle(key){const L=layers[key];L.active=!L.active;L.tile.setAttribute("aria-pressed",L.active?"true":"false");
+    mixName=null;  // manual change — no longer the saved mix
     setLevel(key,L.level);if(L.active&&!playing){setPlaying(true);startFromSilence();}
     if(L.active&&!store.get("hush.hinted")){showToast("Drag a tile sideways to set its level");store.set("hush.hinted",true);}
     reconcile();}
@@ -509,8 +510,15 @@
     if(timerEndsAt&&playing){const ms=Math.max(0,timerEndsAt-Date.now());const m=Math.floor(ms/60000),sec=Math.floor((ms%60000)/1000);txt+=" · "+m+":"+String(sec).padStart(2,"0")+" left";}
     statusEl.textContent=txt;btnTimer.classList.toggle("on",timerMin>0);}
 
+  // what the iOS lock screen / Now Playing shows: the saved-mix name, else the active sounds
+  function mediaTitle(){if(mixName)return mixName;
+    const on=SOUNDS.filter(s=>layers[s.key].active).map(s=>labelOf(s.key));
+    if(!on.length)return "Hush";
+    return on.length<=3?on.join(" · "):on.slice(0,2).join(" · ")+" +"+(on.length-2);}
+  function updateMediaMeta(){if(!("mediaSession"in navigator))return;
+    try{navigator.mediaSession.metadata=new MediaMetadata({title:mediaTitle(),artist:"Hush"});}catch(e){}}
   function setupMediaSession(){if(!("mediaSession"in navigator))return;
-    try{navigator.mediaSession.metadata=new MediaMetadata({title:"Hush",artist:"Ambient mix"});
+    try{updateMediaMeta();
       navigator.mediaSession.setActionHandler("play",()=>{if(!playing)master_btn.click();});
       navigator.mediaSession.setActionHandler("pause",()=>{if(playing)master_btn.click();});}catch(e){}}
   function updateMediaState(){if("mediaSession"in navigator){try{navigator.mediaSession.playbackState=playing?"playing":"paused";}catch(e){}}}
@@ -519,7 +527,7 @@
     const pool=SOUNDS.map(s=>s.key).sort(()=>Math.random()-0.5);const pick=pool.slice(0,2+Math.floor(Math.random()*3));
     SOUNDS.forEach(s=>{const on=pick.includes(s.key);const L=layers[s.key];L.active=on;L.tile.setAttribute("aria-pressed",on?"true":"false");
       if(on)setLevel(s.key,0.4+Math.random()*0.4);else setLevel(s.key,L.level);});
-    if(!playing){setPlaying(true);startFromSilence();}reconcile();});
+    mixName=null;if(!playing){setPlaying(true);startFromSilence();}reconcile();});
 
   const scrim=document.getElementById("scrim"),sheet=document.getElementById("sheet"),plist=document.getElementById("plist"),presetName=document.getElementById("presetName");
   const openSheet=()=>{renderPresets();scrim.classList.add("open");sheet.classList.add("open");};
@@ -539,8 +547,9 @@
     const name=(presetName.value||"").trim()||("Mix "+(getPresets().length+1));
     const snap={name,vol:userVol,layers:{}};
     SOUNDS.forEach(s=>{const L=layers[s.key];snap.layers[s.key]={active:L.active,level:L.level};});
-    const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";renderPresets();showToast("Saved “"+name+"”");});
+    const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";renderPresets();mixName=name;updateMediaMeta();showToast("Saved “"+name+"”");});
   function applyPreset(p){
+    mixName=p.name;  // Now Playing shows the saved mix's name
     if(typeof p.vol==="number"){userVol=p.vol;vol.value=Math.round(userVol*100);vol.style.setProperty("--p",(userVol*100)+"%");}
     SOUNDS.forEach(s=>{const d=p.layers[s.key]||{active:false,level:.6};const L=layers[s.key];
       L.active=!!d.active;L.tile.setAttribute("aria-pressed",L.active?"true":"false");setLevel(s.key,d.level??.6);});
