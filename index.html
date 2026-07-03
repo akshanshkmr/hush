@@ -131,12 +131,18 @@
 
   /* tabs + mixes page */
   .tabs{margin-top:12px;}
-  #mixctl{display:none;}
+  #mixctl{display:none;margin-bottom:14px;}
   body.playing #mixctl{display:block;}
   .view{display:none;}
   .view.on{display:block;}
-  .mixitem{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:14px 14px 14px 16px;}
+  .mixitem{position:relative;overflow:hidden;border-radius:14px;background:var(--card);}
   .mixitem + .mixitem{margin-top:10px;}
+  .mixrow{position:relative;display:flex;align-items:center;gap:10px;background:var(--card);
+    padding:14px 14px 14px 16px;touch-action:pan-y;}
+  .mixacts{position:absolute;top:0;bottom:0;right:0;display:flex;}
+  .mixacts button{width:72px;border:none;color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+  .mixacts .mshare{background:#3478F6;}
+  .mixacts .mdel{background:#FF453A;}
   .mixmain{flex:1;min-width:0;cursor:pointer;}
   .mixname{font-size:17px;font-weight:600;}
   .mixdots{display:flex;align-items:center;gap:5px;margin-top:7px;}
@@ -145,7 +151,6 @@
   .mixplay{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;flex:0 0 auto;display:grid;place-items:center;
     background:color-mix(in srgb,var(--tint) 18%, transparent);color:var(--tint);}
   .mixplay svg{width:18px;height:18px;fill:currentColor;}
-  .mixdel{background:none;border:none;color:#FF453A;cursor:pointer;font-size:15px;padding:8px 4px;min-height:44px;font-family:inherit;}
 
   /* breathing */
   .breath{position:fixed;inset:0;z-index:12;display:none;flex-direction:column;align-items:center;justify-content:center;gap:36px;
@@ -204,17 +209,15 @@
 
   <div class="content">
     <div class="view" id="viewMixes">
+      <div id="mixlist"></div>
+    </div>
+    <div class="view on" id="viewSounds">
       <div id="mixctl">
         <div class="saverow">
           <input id="presetName" type="text" placeholder="Name this mix" maxlength="28"/>
           <button class="savebtn" id="savePreset">Save</button>
         </div>
-        <button class="linkbtn" id="shareMix">Share current mix</button>
-        <div class="grouphdr" style="margin-top:14px">Saved mixes</div>
       </div>
-      <div id="mixlist"></div>
-    </div>
-    <div class="view on" id="viewSounds">
       <div class="grid" id="grid"></div>
     </div>
   </div>
@@ -617,26 +620,52 @@
   const scrim=document.getElementById("scrim"),mixlist=document.getElementById("mixlist"),presetName=document.getElementById("presetName");
   scrim.addEventListener("click",()=>closeTimer());
   function getPresets(){return store.get("hush.presets")||[];}
-  function renderMixes(){const list=getPresets();
-    if(!list.length){mixlist.innerHTML='<div class="empty">No saved mixes yet.<br>Build one on the Sounds tab, then save it here.</div>';return;}
+  const ACT_W=144;let openMix=null;
+  function closeMix(){if(!openMix)return;const r=openMix.querySelector(".mixrow");
+    r.style.transition="transform .25s";r.style.transform="translateX(0)";openMix=null;}
+  function renderMixes(){const list=getPresets();openMix=null;
+    if(!list.length){mixlist.innerHTML='<div class="empty">No saved mixes yet.<br>Start a mix in Sounds and save it while it plays.</div>';return;}
     mixlist.innerHTML="";list.forEach((p,idx)=>{
       const keys=Object.keys(p.layers).filter(k=>p.layers[k].active&&COLORS[k]);
       const dots=keys.map(k=>`<i style="background:${COLORS[k]}"></i>`).join("");
       const isCur=p.name===mixName,showPause=isCur&&playing;
       const icon=showPause?'<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z"/></svg>'
                           :'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-      const row=document.createElement("div");row.className="mixitem";
-      row.innerHTML=`<div class="mixmain"><div class="mixname">${escapeHtml(p.name)}</div>
-        <div class="mixdots">${dots}<span>${keys.length} sound${keys.length===1?"":"s"}</span></div></div>
-        <button class="mixplay" aria-label="${showPause?"Pause":"Play"} ${escapeHtml(p.name)}">${icon}</button>
-        <button class="mixdel" aria-label="Delete">Delete</button>`;
-      if(isCur)row.querySelector(".mixname").style.color="var(--tint)";
-      // tapping the current playing mix pauses it; anything else loads and plays
-      const act=()=>{if(showPause)master_btn.click();else applyPreset(p);renderMixes();};
-      row.querySelector(".mixmain").addEventListener("click",act);
-      row.querySelector(".mixplay").addEventListener("click",act);
-      row.querySelector(".mixdel").addEventListener("click",()=>{const l=getPresets();l.splice(idx,1);store.set("hush.presets",l);renderMixes();});
-      mixlist.appendChild(row);});}
+      const item=document.createElement("div");item.className="mixitem";
+      item.innerHTML=`<div class="mixacts">
+          <button class="mshare" aria-label="Share ${escapeHtml(p.name)}">Share</button>
+          <button class="mdel" aria-label="Delete ${escapeHtml(p.name)}">Delete</button>
+        </div>
+        <div class="mixrow">
+          <div class="mixmain"><div class="mixname">${escapeHtml(p.name)}</div>
+          <div class="mixdots">${dots}<span>${keys.length} sound${keys.length===1?"":"s"}</span></div></div>
+          <button class="mixplay" aria-label="${showPause?"Pause":"Play"} ${escapeHtml(p.name)}">${icon}</button>
+        </div>`;
+      const row=item.querySelector(".mixrow");
+      if(isCur)item.querySelector(".mixname").style.color="var(--tint)";
+      item.querySelector(".mdel").addEventListener("click",()=>{const l=getPresets();l.splice(idx,1);store.set("hush.presets",l);renderMixes();});
+      item.querySelector(".mshare").addEventListener("click",()=>{closeMix();shareMixLink(p);});
+      // tap: current playing mix pauses, anything else loads and plays; a tap also closes an open row
+      const act=()=>{if(openMix){closeMix();return;}if(showPause)master_btn.click();else applyPreset(p);renderMixes();};
+      item.querySelector(".mixmain").addEventListener("click",act);
+      item.querySelector(".mixplay").addEventListener("click",act);
+      // iOS-style swipe-left reveals Share/Delete
+      let sx=null,sy=0,mode=null,swiped=false;
+      row.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;mode=null;swiped=false;});
+      row.addEventListener("pointermove",e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;
+        if(mode==null){if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){mode="swipe";swiped=true;row.style.transition="none";try{row.setPointerCapture(e.pointerId);}catch(_){}}
+          else if(Math.abs(dy)>8)mode="scroll";}
+        if(mode==="swipe"){e.preventDefault();const base=openMix===item?-ACT_W:0;
+          row.style.transform="translateX("+Math.min(0,Math.max(-ACT_W,base+dx))+"px)";}});
+      const fin=e=>{if(sx==null)return;const dx=e.clientX-sx,m=mode;sx=null;mode=null;row.style.transition="";
+        if(m!=="swipe")return;
+        const x=(openMix===item?-ACT_W:0)+dx;
+        if(x<-ACT_W/2){row.style.transform="translateX(-"+ACT_W+"px)";if(openMix&&openMix!==item)closeMix();openMix=item;}
+        else{row.style.transform="translateX(0)";if(openMix===item)openMix=null;}};
+      row.addEventListener("pointerup",fin);
+      row.addEventListener("pointercancel",fin);
+      item.addEventListener("click",e=>{if(swiped){swiped=false;e.stopPropagation();e.preventDefault();}},true);
+      mixlist.appendChild(item);});}
 
   const tabMixes=document.getElementById("tabMixes"),tabSounds=document.getElementById("tabSounds"),
         viewMixes=document.getElementById("viewMixes"),viewSounds=document.getElementById("viewSounds");
@@ -651,15 +680,13 @@
     const snap={name,vol:userVol,layers:{}};
     SOUNDS.forEach(s=>{const L=layers[s.key];snap.layers[s.key]={active:L.active,level:L.level};});
     const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";mixName=name;renderMixes();updateMediaMeta();showToast("Saved “"+name+"”");});
-  function mixUrl(){const p=new URLSearchParams();
-    SOUNDS.forEach(s=>{const L=layers[s.key];if(L.active)p.set(s.key,Math.round(L.level*100));});
-    p.set("v",Math.round(userVol*100));if(mixName)p.set("n",mixName);
-    return location.origin+location.pathname+"#"+p.toString();}
-  document.getElementById("shareMix").addEventListener("click",async()=>{
-    if(!SOUNDS.some(s=>layers[s.key].active)){showToast("Turn on some sounds first");return;}
-    const url=mixUrl();
+  function mixUrl(p){const q=new URLSearchParams();
+    Object.keys(p.layers||{}).forEach(k=>{const d=p.layers[k];if(d&&d.active&&COLORS[k])q.set(k,Math.round((d.level??.6)*100));});
+    if(typeof p.vol==="number")q.set("v",Math.round(p.vol*100));if(p.name)q.set("n",p.name);
+    return location.origin+location.pathname+"#"+q.toString();}
+  async function shareMixLink(p){const url=mixUrl(p);
     try{if(navigator.share){await navigator.share({title:"Hush mix",url});return;}}catch(e){if(e&&e.name==="AbortError")return;}
-    try{await navigator.clipboard.writeText(url);showToast("Link copied");}catch(e){showToast(url);}});
+    try{await navigator.clipboard.writeText(url);showToast("Link copied");}catch(e){showToast(url);}}
   function applyPreset(p){
     mixName=p.name;  // Now Playing shows the saved mix's name
     if(typeof p.vol==="number"){userVol=p.vol;vol.value=Math.round(userVol*100);vol.style.setProperty("--p",(userVol*100)+"%");}
