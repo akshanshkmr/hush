@@ -36,7 +36,7 @@
   /* nav / large title */
   header{padding:calc(env(safe-area-inset-top) + 8px) 20px 6px;}
   .titlerow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
-  .largetitle{font-size:34px;font-weight:700;letter-spacing:.37px;margin:0;line-height:1.05;}
+  .largetitle{font-family:ui-serif,"New York",Georgia,serif;font-style:italic;font-size:38px;font-weight:600;letter-spacing:.2px;margin:0;line-height:1.05;}
   .navbtns{display:flex;gap:2px;margin-bottom:3px;}
   .navbtn{width:44px;height:44px;border:none;background:none;color:var(--tint);display:grid;place-items:center;cursor:pointer;border-radius:50%;}
   .navbtn:active{background:var(--fill2);}
@@ -53,7 +53,8 @@
 
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
   .cell{position:relative;overflow:hidden;appearance:none;cursor:pointer;border:none;font-family:inherit;
-    aspect-ratio:1/.92;background:var(--card);border-radius:20px;color:var(--label2);
+    aspect-ratio:1/.92;background:color-mix(in srgb,var(--c,#888) 7%,var(--card));border-radius:20px;color:var(--label2);
+    box-shadow:inset 0 0 0 .5px rgba(255,255,255,.045);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
     touch-action:pan-y;transition:background .2s,color .2s,transform .15s,box-shadow .25s;}
   .cell:active{transform:scale(.96);}
@@ -75,11 +76,6 @@
   .grouphdr{font-size:13px;color:var(--label2);text-transform:uppercase;letter-spacing:.5px;padding:0 6px 7px;}
   .groupftr{font-size:13px;color:var(--label2);padding:7px 6px 0;min-height:18px;}
 
-  .seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px;}
-  .seg button{flex:1;appearance:none;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;
-    color:var(--label);background:transparent;border-radius:7px;padding:7px 0;min-height:32px;transition:background .15s;}
-  .seg button[aria-pressed="true"]{background:var(--seg-knob);box-shadow:0 1px 3px rgba(0,0,0,.2),0 0 0 .5px rgba(0,0,0,.04);}
-  .seg button:focus-visible{outline:2px solid var(--tint);outline-offset:1px;}
 
   .linkbtn{appearance:none;border:none;background:none;color:var(--tint);font-family:inherit;font-size:16px;font-weight:500;cursor:pointer;padding:11px 6px;min-height:44px;}
 
@@ -102,7 +98,9 @@
     border-top:.5px solid var(--sep);
     padding:11px 18px calc(env(safe-area-inset-bottom) + 11px);
     display:flex;align-items:center;gap:14px;}
-  .playbtn{flex:0 0 auto;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;background:var(--tint);
+  .playbtn{flex:0 0 auto;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+    background:radial-gradient(circle at 35% 30%,#ffc76a,var(--tint) 75%);
+    box-shadow:0 6px 22px -8px rgba(255,159,10,.55);
     display:grid;place-items:center;transition:transform .15s,opacity .2s;}
   .playbtn:active{transform:scale(.93);}
   .playbtn:disabled{opacity:.35;cursor:default;}
@@ -135,7 +133,11 @@
   .empty{color:var(--label2);font-size:15px;text-align:center;padding:24px;}
 
   /* tabs + mixes page */
-  .tabs{margin-top:12px;}
+  .tabs{display:flex;gap:24px;margin-top:14px;}
+  .tabs button{appearance:none;background:none;border:none;padding:7px 2px;font-family:inherit;font-size:15px;font-weight:600;
+    color:var(--label2);position:relative;cursor:pointer;transition:color .2s;}
+  .tabs button[aria-pressed="true"]{color:var(--label);}
+  .tabs button[aria-pressed="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2.5px;border-radius:2px;background:var(--tint);}
   #mixctl{display:none;margin-bottom:14px;}
   body.playing #mixctl{display:block;}
   .view{display:none;}
@@ -149,7 +151,7 @@
   .mixacts .mshare{background:#3478F6;}
   .mixacts .mdel{background:#FF453A;}
   .mixmain{flex:1;min-width:0;cursor:pointer;}
-  .mixname{font-size:17px;font-weight:600;}
+  .mixname{font-family:ui-serif,"New York",Georgia,serif;font-size:18px;font-weight:600;}
   .mixdots{display:flex;align-items:center;gap:5px;margin-top:7px;}
   .mixdots i{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
   .mixdots span{font-size:13px;color:var(--label2);margin-left:4px;}
@@ -163,7 +165,7 @@
   .breath.open{display:flex;}
   .bcircle{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 40% 33%,#ffd99a,var(--tint) 70%);
     box-shadow:0 0 80px 10px rgba(255,159,10,.4);transform:scale(.55);}
-  .blabel{font-size:22px;font-weight:500;color:#fff;letter-spacing:.3px;}
+  .blabel{font-family:ui-serif,"New York",Georgia,serif;font-style:italic;font-size:24px;font-weight:500;color:#fff;letter-spacing:.3px;}
   .bclose{position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:16px;width:44px;height:44px;background:rgba(120,120,128,.4);
     border:none;border-radius:50%;color:#fff;font-size:22px;cursor:pointer;display:grid;place-items:center;}
 
@@ -201,7 +203,7 @@
 
   <header>
     <div class="titlerow">
-      <h1 class="largetitle">Hush</h1>
+      <h1 class="largetitle">hush</h1>
       <div class="navbtns">
         <button class="navbtn" id="btnInstall" aria-label="Install Hush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></svg></button>
         <button class="navbtn" id="btnShuffle" aria-label="Shuffle mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4l3 3-3 3"/><path d="M3 7h4c3 0 4 10 7 10h4"/><path d="M18 14l3 3-3 3"/><path d="M3 17h4c1.6 0 2.6-1.8 3.6-3.8"/></svg></button>
@@ -210,7 +212,7 @@
       </div>
     </div>
     <div class="subtitle" id="status">Nothing playing</div>
-    <div class="seg tabs" id="tabs">
+    <div class="tabs" id="tabs">
       <button id="tabMixes" aria-pressed="false">Mixes</button>
       <button id="tabSounds" aria-pressed="true">Sounds</button>
     </div>
@@ -360,7 +362,10 @@
   const stopAll=a=>a.forEach(n=>{try{n.stop()}catch(e){}});
   const ramp=(p,v,sec)=>{const t=ctx.currentTime;p.cancelScheduledValues(t);p.setValueAtTime(p.value,t);p.linearRampToValueAtTime(v,t+sec);};
 
-  const tone=type=>out=>{const s=loopSrc(type);s.connect(out);s.start();return()=>{try{s.stop()}catch(e){}};};
+  // makeup gains: raw white is ~3-4x the RMS of pink/brown — equalize at the slider
+  const TONE_GAIN={white:.30,pink:.85,brown:1.0};
+  const tone=type=>out=>{const s=loopSrc(type);const g=ctx.createGain();g.gain.value=TONE_GAIN[type];
+    s.connect(g);g.connect(out);s.start();return()=>{try{s.stop()}catch(e){}};};
   function rain(out){const s=loopSrc("pink");const hp=ctx.createBiquadFilter();hp.type="highpass";hp.frequency.value=620;
     const pk=ctx.createBiquadFilter();pk.type="peaking";pk.frequency.value=2400;pk.gain.value=4;pk.Q.value=.7;
     const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=9000;const g=ctx.createGain();g.gain.value=.85;
@@ -412,18 +417,19 @@
     lp.connect(g);g.connect(out);return()=>stopAll([...oscs,tr]);}
   function thunder(out){let alive=true,timer=null;
     // faint continuous distant rumble so gaps never feel dead
-    const rumble=loopSrc("brown");const rlp=ctx.createBiquadFilter();rlp.type="lowpass";rlp.frequency.value=170;
-    const rg=ctx.createGain();rg.gain.value=0.04;rumble.connect(rlp);rlp.connect(rg);rg.connect(out);rumble.start();
+    const rumble=loopSrc("brown");const rlp=ctx.createBiquadFilter();rlp.type="lowpass";rlp.frequency.value=240;
+    const rg=ctx.createGain();rg.gain.value=0.07;rumble.connect(rlp);rlp.connect(rg);rg.connect(out);rumble.start();
     function strike(){if(!alive)return;const t=ctx.currentTime;
       // bias toward nearer strikes and a tighter range so every one reads clearly as thunder
       const dist=Math.random()*0.7,near=dist<0.55,loud=1.0-0.45*dist;
       // BOOM — sub-bass chest thump swooping down
-      const sub=ctx.createOscillator();sub.type="sine";sub.frequency.setValueAtTime(near?75:50,t);sub.frequency.exponentialRampToValueAtTime(28,t+.9);
+      // stays above ~45 Hz so the boom is audible on phone speakers
+      const sub=ctx.createOscillator();sub.type="sine";sub.frequency.setValueAtTime(near?110:80,t);sub.frequency.exponentialRampToValueAtTime(45,t+.9);
       const subg=ctx.createGain();subg.gain.setValueAtTime(.0001,t);subg.gain.exponentialRampToValueAtTime(loud*.9,t+(near?.03:.15));
       subg.gain.exponentialRampToValueAtTime(.0001,t+1.6);sub.connect(subg);subg.connect(out);sub.start(t);sub.stop(t+1.8);
       // RUMBLE — brown noise, lowpass drifting down, with irregular rolling swells
       const dur=3.0+Math.random()*3.5;const s=shotSrc("brown");const lp=ctx.createBiquadFilter();lp.type="lowpass";
-      lp.frequency.setValueAtTime(near?450:220,t);lp.frequency.exponentialRampToValueAtTime(90,t+dur);
+      lp.frequency.setValueAtTime(near?450:220,t);lp.frequency.exponentialRampToValueAtTime(110,t+dur);
       const g=ctx.createGain();g.gain.setValueAtTime(.0001,t);let tt=t+(near?.05:.25);
       g.gain.linearRampToValueAtTime(loud*(near?.85:.55),tt);
       while(tt<t+dur){tt+=.18+Math.random()*.22;const frac=(tt-t)/dur;
@@ -449,16 +455,16 @@
       const g=ctx.createGain();g.gain.setValueAtTime(.0001,t+off);g.gain.exponentialRampToValueAtTime(amp,t+off+.002);
       g.gain.exponentialRampToValueAtTime(.0001,t+off+.012+Math.random()*.035);
       c.connect(bp);bp.connect(g);g.connect(out);c.start(t+off);c.stop(t+off+.12);}
-    function tick(){if(!alive)return;crackle(.05+Math.random()*.14);t1=setTimeout(tick,35+Math.random()*180);}
+    function tick(){if(!alive)return;crackle(.08+Math.random()*.20);t1=setTimeout(tick,35+Math.random()*180);}
     // occasional cluster of pops (a log settling)
     function burst(){if(!alive)return;const n=3+Math.floor(Math.random()*4);
-      for(let i=0;i<n;i++)setTimeout(()=>{if(alive)crackle(.12+Math.random()*.28);},i*(25+Math.random()*55));
+      for(let i=0;i<n;i++)setTimeout(()=>{if(alive)crackle(.16+Math.random()*.34);},i*(25+Math.random()*55));
       t2=setTimeout(burst,2600+Math.random()*4500);}
     tick();burst();
     return()=>{alive=false;if(t1)clearTimeout(t1);if(t2)clearTimeout(t2);stopAll([bed,emb,fl,fl2]);};}
   function heartbeat(out){let alive=true,t1=null;
-    function thump(at,amp){const o=ctx.createOscillator();o.type="sine";o.frequency.setValueAtTime(70,at);
-      o.frequency.exponentialRampToValueAtTime(40,at+.12);const g=ctx.createGain();
+    function thump(at,amp){const o=ctx.createOscillator();o.type="sine";o.frequency.setValueAtTime(85,at);
+      o.frequency.exponentialRampToValueAtTime(48,at+.12);const g=ctx.createGain();
       g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(amp,at+.02);g.gain.exponentialRampToValueAtTime(.0001,at+.22);
       o.connect(g);g.connect(out);o.start(at);o.stop(at+.3);}
     function beat(){if(!alive)return;const t=ctx.currentTime;thump(t,.9);thump(t+.22,.55);
