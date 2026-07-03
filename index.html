@@ -192,6 +192,24 @@
     box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:20;max-width:80%;text-align:center;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
   .grabber{cursor:grab;}
+  /* tablet / desktop */
+  @media (min-width:640px){
+    header,.content{width:100%;max-width:760px;margin:0 auto;}
+    .grid{grid-template-columns:repeat(4,1fr);gap:12px;}
+  }
+  @media (min-width:760px){
+    .dock{left:50%;right:auto;transform:translateX(-50%);width:min(720px,calc(100vw - 48px));
+      bottom:18px;border-radius:22px;border:.5px solid var(--sep);
+      padding:12px 18px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  }
+  @media (hover:hover){
+    .cell:hover{filter:brightness(1.15);}
+    .navbtn:hover{background:var(--fill2);}
+    .mixrow:hover{background:color-mix(in srgb,#fff 4%,var(--card));}
+    .mixplay:hover{background:color-mix(in srgb,var(--tint) 30%,transparent);}
+    .tabs button:hover{color:var(--label);}
+    .selrow:hover{background:var(--fill2);}
+  }
   @media (prefers-reduced-motion: reduce){.bcircle{transform:scale(.92) !important;}*{transition:none !important;animation:none !important;}}
 </style>
 </head>
@@ -762,6 +780,10 @@
     sheetEl.addEventListener("pointerup",up);
     sheetEl.addEventListener("pointercancel",()=>{y0=null;sheetEl.style.transition="";sheetEl.style.transform="";});}
   attachSheetSwipe(timerSheet,closeTimer);
+
+  // desktop: spacebar toggles play/pause when nothing else has focus
+  document.addEventListener("keydown",e=>{
+    if(e.code==="Space"&&e.target===document.body){e.preventDefault();if(!master_btn.disabled)master_btn.click();}});
 
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden) return;
