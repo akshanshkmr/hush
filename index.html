@@ -55,9 +55,9 @@
   .cell svg{width:27px;height:27px;color:color-mix(in srgb, var(--c,var(--label2)) 55%, var(--label2));}
   .cell .name{font-size:13px;font-weight:500;letter-spacing:-.1px;}
   .cell svg,.cell .name{position:relative;}
-  .cell::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--lvl,60%);
-    background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,.12));
-    opacity:0;transition:height .1s linear,opacity .25s;}
+  .cell::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--lvl,60%);
+    background:linear-gradient(90deg,rgba(255,255,255,.26),rgba(255,255,255,.10));
+    opacity:0;transition:width .1s linear,opacity .25s;}
   .cell[aria-pressed="true"]{color:#fff;
     background:linear-gradient(157deg, color-mix(in srgb,var(--c) 76%, #fff), var(--c));
     box-shadow:0 12px 28px -12px color-mix(in srgb,var(--c) 72%, transparent), inset 0 0 0 .5px rgba(255,255,255,.16);}
@@ -76,10 +76,6 @@
   .seg button[aria-pressed="true"]{background:var(--seg-knob);box-shadow:0 1px 3px rgba(0,0,0,.2),0 0 0 .5px rgba(0,0,0,.04);}
   .seg button:focus-visible{outline:2px solid var(--tint);outline-offset:1px;}
 
-  .customrow{display:flex;align-items:center;gap:10px;margin-top:10px;}
-  .customrow input{width:110px;background:var(--card);border:none;border-radius:10px;color:var(--label);
-    padding:11px;font-family:inherit;font-size:16px;text-align:center;min-height:44px;}
-  .customrow input:focus{outline:2px solid var(--tint);}
   .linkbtn{appearance:none;border:none;background:none;color:var(--tint);font-family:inherit;font-size:16px;font-weight:500;cursor:pointer;padding:11px 6px;min-height:44px;}
 
   .card{background:var(--card);border-radius:12px;margin-top:12px;overflow:hidden;}
@@ -135,6 +131,8 @@
 
   /* tabs + mixes page */
   .tabs{margin-top:12px;}
+  #mixctl{display:none;}
+  body.playing #mixctl{display:block;}
   .view{display:none;}
   .view.on{display:block;}
   .mixitem{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:14px 14px 14px 16px;}
@@ -155,9 +153,6 @@
   .breath.open{display:flex;}
   .bcircle{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 40% 33%,#ffd99a,var(--tint) 70%);
     box-shadow:0 0 80px 10px rgba(255,159,10,.4);transform:scale(.55);}
-  .breathseg{width:min(340px,82vw);}
-  .breathseg button{color:#fff;}
-  .breathseg button[aria-pressed="true"]{background:rgba(255,255,255,.28);box-shadow:none;}
   .blabel{font-size:22px;font-weight:500;color:#fff;letter-spacing:.3px;}
   .bclose{position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:16px;width:44px;height:44px;background:rgba(120,120,128,.4);
     border:none;border-radius:50%;color:#fff;font-size:22px;cursor:pointer;display:grid;place-items:center;}
@@ -209,12 +204,14 @@
 
   <div class="content">
     <div class="view" id="viewMixes">
-      <div class="saverow">
-        <input id="presetName" type="text" placeholder="Name this mix" maxlength="28"/>
-        <button class="savebtn" id="savePreset">Save</button>
+      <div id="mixctl">
+        <div class="saverow">
+          <input id="presetName" type="text" placeholder="Name this mix" maxlength="28"/>
+          <button class="savebtn" id="savePreset">Save</button>
+        </div>
+        <button class="linkbtn" id="shareMix">Share current mix</button>
+        <div class="grouphdr" style="margin-top:14px">Saved mixes</div>
       </div>
-      <button class="linkbtn" id="shareMix">Share current mix</button>
-      <div class="grouphdr" style="margin-top:14px">Saved mixes</div>
       <div id="mixlist"></div>
     </div>
     <div class="view on" id="viewSounds">
@@ -238,17 +235,12 @@
     <div class="grabber"></div>
     <h2>Sleep Timer</h2>
     <div class="sellist" id="sellist"></div>
-    <div class="customrow">
-      <input id="customMin" type="number" min="1" max="480" placeholder="Custom minutes" inputmode="numeric"/>
-      <button class="linkbtn" id="customSet">Set</button>
-    </div>
   </div>
 
   <div class="breath" id="breath" role="dialog" aria-label="Breathing pacer">
     <button class="bclose" id="breathClose" aria-label="Close">&times;</button>
     <div class="bcircle"></div>
     <div class="blabel" id="blabel">Breathe</div>
-    <div class="seg breathseg" id="breathSeg" role="group" aria-label="Breathing pattern"></div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -535,6 +527,7 @@
       else if(should&&L.stop){ramp(L.gain.gain,L.level,0.25);}
       else if(!should&&L.stop){ramp(L.gain.gain,0,0.4);const s=L.stop;L.stop=null;setTimeout(()=>s(),460);}});
     renderStatus();updateMediaState();updateMediaMeta();updateAmbient();persistState();
+    if(viewMixes.classList.contains("on"))renderMixes();
     if(playing&&timerMin>0&&!timerEndsAt){startTimer();}
   }
 
@@ -629,15 +622,19 @@
     mixlist.innerHTML="";list.forEach((p,idx)=>{
       const keys=Object.keys(p.layers).filter(k=>p.layers[k].active&&COLORS[k]);
       const dots=keys.map(k=>`<i style="background:${COLORS[k]}"></i>`).join("");
+      const isCur=p.name===mixName,showPause=isCur&&playing;
+      const icon=showPause?'<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z"/></svg>'
+                          :'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
       const row=document.createElement("div");row.className="mixitem";
       row.innerHTML=`<div class="mixmain"><div class="mixname">${escapeHtml(p.name)}</div>
         <div class="mixdots">${dots}<span>${keys.length} sound${keys.length===1?"":"s"}</span></div></div>
-        <button class="mixplay" aria-label="Play ${escapeHtml(p.name)}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="mixplay" aria-label="${showPause?"Pause":"Play"} ${escapeHtml(p.name)}">${icon}</button>
         <button class="mixdel" aria-label="Delete">Delete</button>`;
-      if(p.name===mixName)row.querySelector(".mixname").style.color="var(--tint)";
-      const load=()=>{applyPreset(p);renderMixes();};
-      row.querySelector(".mixmain").addEventListener("click",load);
-      row.querySelector(".mixplay").addEventListener("click",load);
+      if(isCur)row.querySelector(".mixname").style.color="var(--tint)";
+      // tapping the current playing mix pauses it; anything else loads and plays
+      const act=()=>{if(showPause)master_btn.click();else applyPreset(p);renderMixes();};
+      row.querySelector(".mixmain").addEventListener("click",act);
+      row.querySelector(".mixplay").addEventListener("click",act);
       row.querySelector(".mixdel").addEventListener("click",()=>{const l=getPresets();l.splice(idx,1);store.set("hush.presets",l);renderMixes();});
       mixlist.appendChild(row);});}
 
@@ -672,24 +669,15 @@
   function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
   const breath=document.getElementById("breath"),blabel=document.getElementById("blabel"),
-        bcircle=document.querySelector(".bcircle"),breathSeg=document.getElementById("breathSeg");
-  const PATTERNS={calm:{name:"Calm",seq:[["Breathe in",5.5,1.15],["Breathe out",5.5,.55]]},
-    box:{name:"Box",seq:[["Breathe in",4,1.15],["Hold",4,1.15],["Breathe out",4,.55],["Hold",4,.55]]},
-    b478:{name:"4-7-8",seq:[["Breathe in",4,1.15],["Hold",7,1.15],["Breathe out",8,.55]]}};
-  let breathTO=null,bpat=store.get("hush.breath");if(!PATTERNS[bpat])bpat="calm";
-  function renderBreathSeg(){breathSeg.innerHTML="";Object.keys(PATTERNS).forEach(k=>{
-    const b=document.createElement("button");b.textContent=PATTERNS[k].name;
-    b.setAttribute("aria-pressed",k===bpat?"true":"false");
-    b.addEventListener("click",()=>{bpat=k;store.set("hush.breath",k);renderBreathSeg();stopBreath();runBreath(0);});
-    breathSeg.appendChild(b);});}
-  function runBreath(i){const seq=PATTERNS[bpat].seq,[label,dur,scale]=seq[i%seq.length];
-    blabel.textContent=label;
-    try{if(navigator.vibrate)navigator.vibrate(35);}catch(e){}
+        bcircle=document.querySelector(".bcircle");
+  const BREATH=[["Breathe in",5.5,1.15],["Breathe out",5.5,.55]];
+  let breathTO=null;
+  function runBreath(i){const[label,dur,scale]=BREATH[i%2];blabel.textContent=label;
     bcircle.style.transition="transform "+dur+"s ease-in-out";bcircle.style.transform="scale("+scale+")";
     breathTO=setTimeout(()=>runBreath(i+1),dur*1000);}
   function stopBreath(){if(breathTO)clearTimeout(breathTO);breathTO=null;}
   document.getElementById("btnBreathe").addEventListener("click",()=>{breath.classList.add("open");
-    renderBreathSeg();stopBreath();bcircle.style.transition="none";bcircle.style.transform="scale(.55)";
+    stopBreath();bcircle.style.transition="none";bcircle.style.transform="scale(.55)";
     requestAnimationFrame(()=>runBreath(0));});
   document.getElementById("breathClose").addEventListener("click",()=>{breath.classList.remove("open");stopBreath();});
 
@@ -712,8 +700,6 @@
   function openTimer(){renderTimerList();scrim.classList.add("open");timerSheet.classList.add("open");}
   function closeTimer(){scrim.classList.remove("open");timerSheet.classList.remove("open");}
   btnTimer.addEventListener("click",openTimer);
-  document.getElementById("customSet").addEventListener("click",()=>{const v=parseInt(document.getElementById("customMin").value,10);
-    if(!v||v<1)return;setTimer(v);closeTimer();});
 
   // swipe the sheet down to dismiss (ignores drags on lists/inputs/buttons so scrolling still works)
   function attachSheetSwipe(sheetEl,closeFn){let y0=null;
