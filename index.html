@@ -180,10 +180,10 @@
   .selrow .ck{color:var(--tint);opacity:0;display:grid;place-items:center;}
   .selrow .ck svg{width:18px;height:18px;}
   .selrow[aria-selected="true"] .ck{opacity:1;}
-  .dockcap{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--label2);flex:0 0 auto;}
   .dockmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
-  .dockrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 2px;}
-  .docktitle{font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .volrow{display:flex;align-items:center;gap:9px;}
+  .volrow .spk svg{width:15px;height:15px;}
+  .docktitle{font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:0 2px;}
   body:not(.playing) .docktitle{color:var(--label2);font-weight:500;}
   #btnInstall{display:none;}
   #btnInstall.show{display:grid;}
@@ -239,10 +239,13 @@
       <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.2v14H7zm6.8 0H17v14h-3.2z"/></svg>
     </button>
     <div class="dockmid">
-      <div class="dockrow"><span class="docktitle" id="dockTitle">Nothing playing</span><span class="dockcap">Master</span></div>
-      <input type="range" id="vol" min="0" max="100" value="60" aria-label="Master volume" />
+      <div class="docktitle" id="dockTitle">Nothing playing</div>
+      <div class="volrow">
+        <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/></svg></span>
+        <input type="range" id="vol" min="0" max="100" value="60" aria-label="Volume" />
+        <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg></span>
+      </div>
     </div>
-    <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg></span>
   </div>
 
   <div class="scrim" id="scrim"></div>
@@ -613,7 +616,7 @@
     let txt=count===0?"Nothing playing":count+(count===1?" sound":" sounds")+" · "+(playing?"Playing":"Paused");
     if(timerEndsAt&&playing){const ms=Math.max(0,timerEndsAt-Date.now());const m=Math.floor(ms/60000),sec=Math.floor((ms%60000)/1000);txt+=" · "+m+":"+String(sec).padStart(2,"0")+" left";}
     statusEl.textContent=txt;btnTimer.classList.toggle("on",timerMin>0);
-    dockTitle.textContent=count===0?"Nothing playing":mediaTitle();}
+    dockTitle.textContent=count===0?"Nothing playing":mediaTitle()+(playing?"":" · Paused");}
 
   // what the iOS lock screen / Now Playing shows: the saved-mix name, else the active sounds
   function mediaTitle(){if(mixName)return mixName;
@@ -670,21 +673,23 @@
       item.querySelector(".mixmain").addEventListener("click",act);
       item.querySelector(".mixplay").addEventListener("click",act);
       // iOS-style swipe-left reveals Share/Delete
-      let sx=null,sy=0,mode=null,swiped=false;
-      row.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;mode=null;swiped=false;});
+      let sx=null,sy=0,mode=null,swipedAt=0;
+      row.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;mode=null;});
       row.addEventListener("pointermove",e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;
-        if(mode==null){if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){mode="swipe";swiped=true;row.style.transition="none";try{row.setPointerCapture(e.pointerId);}catch(_){}}
+        if(mode==null){if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){mode="swipe";row.style.transition="none";try{row.setPointerCapture(e.pointerId);}catch(_){}}
           else if(Math.abs(dy)>8)mode="scroll";}
         if(mode==="swipe"){e.preventDefault();const base=openMix===item?-ACT_W:0;
           row.style.transform="translateX("+Math.min(0,Math.max(-ACT_W,base+dx))+"px)";}});
       const fin=e=>{if(sx==null)return;const dx=e.clientX-sx,m=mode;sx=null;mode=null;row.style.transition="";
         if(m!=="swipe")return;
+        swipedAt=Date.now();
         const x=(openMix===item?-ACT_W:0)+dx;
         if(x<-ACT_W/2){row.style.transform="translateX(-"+ACT_W+"px)";if(openMix&&openMix!==item)closeMix();openMix=item;}
         else{row.style.transform="translateX(0)";if(openMix===item)openMix=null;}};
       row.addEventListener("pointerup",fin);
       row.addEventListener("pointercancel",fin);
-      item.addEventListener("click",e=>{if(swiped){swiped=false;e.stopPropagation();e.preventDefault();}},true);
+      // swallow only the ghost click of the swipe itself, not the next real tap
+      item.addEventListener("click",e=>{if(Date.now()-swipedAt<350){e.stopPropagation();e.preventDefault();}},true);
       mixlist.appendChild(item);});}
 
   const tabMixes=document.getElementById("tabMixes"),tabSounds=document.getElementById("tabSounds"),
