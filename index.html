@@ -4,10 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Hush" />
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" />
 <title>Hush</title>
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
@@ -20,12 +19,6 @@
     --label:#FFFFFF;--label2:rgba(235,235,245,.6);--label3:rgba(235,235,245,.3);
     --sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.32);--fill2:rgba(120,120,128,.2);
     --tint:#FF9F0A;--seg-knob:#636366;--chrome:rgba(30,30,32,.72);
-  }
-  @media (prefers-color-scheme: light){
-    :root{--bg:#F2F2F7;--card:#FFFFFF;--card2:#FFFFFF;
-      --label:#000000;--label2:rgba(60,60,67,.6);--label3:rgba(60,60,67,.3);
-      --sep:rgba(60,60,67,.29);--fill:rgba(120,120,128,.2);--fill2:rgba(120,120,128,.12);
-      --tint:#FF9500;--seg-knob:#FFFFFF;--chrome:rgba(248,248,250,.8);}
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;margin:0;}
@@ -135,17 +128,26 @@
   .grabber{width:36px;height:5px;border-radius:3px;background:var(--label3);margin:6px auto 12px;}
   .sheet h2{font-size:20px;font-weight:700;margin:0 0 14px;}
   .saverow{display:flex;gap:10px;margin-bottom:18px;}
-  .saverow input{flex:1;background:var(--bg);border:none;border-radius:11px;color:var(--label);padding:13px 14px;font-family:inherit;font-size:16px;min-height:46px;}
+  .saverow input{flex:1;background:var(--card);border:none;border-radius:11px;color:var(--label);padding:13px 14px;font-family:inherit;font-size:16px;min-height:46px;}
   .saverow input:focus{outline:2px solid var(--tint);}
   .savebtn{appearance:none;border:none;border-radius:11px;background:var(--tint);color:#fff;font-family:inherit;font-weight:600;font-size:16px;padding:0 18px;min-height:46px;cursor:pointer;}
-  .plist{display:flex;flex-direction:column;background:var(--bg);border-radius:12px;overflow:hidden;max-height:42vh;overflow-y:auto;}
-  .pitem{display:flex;align-items:center;gap:10px;padding:13px 15px;}
-  .pitem + .pitem{border-top:.5px solid var(--sep);}
-  .pitem .pname{flex:1;cursor:pointer;}
-  .pitem .pname .t{font-size:16px;font-weight:500;}
-  .pitem .pname .s{font-size:13px;color:var(--label2);margin-top:2px;}
-  .pitem .del{background:none;border:none;color:#FF453A;cursor:pointer;font-size:15px;padding:8px;min-width:44px;min-height:44px;}
   .empty{color:var(--label2);font-size:15px;text-align:center;padding:24px;}
+
+  /* tabs + mixes page */
+  .tabs{margin-top:12px;}
+  .view{display:none;}
+  .view.on{display:block;}
+  .mixitem{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:14px 14px 14px 16px;}
+  .mixitem + .mixitem{margin-top:10px;}
+  .mixmain{flex:1;min-width:0;cursor:pointer;}
+  .mixname{font-size:17px;font-weight:600;}
+  .mixdots{display:flex;align-items:center;gap:5px;margin-top:7px;}
+  .mixdots i{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
+  .mixdots span{font-size:13px;color:var(--label2);margin-left:4px;}
+  .mixplay{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;flex:0 0 auto;display:grid;place-items:center;
+    background:color-mix(in srgb,var(--tint) 18%, transparent);color:var(--tint);}
+  .mixplay svg{width:18px;height:18px;fill:currentColor;}
+  .mixdel{background:none;border:none;color:#FF453A;cursor:pointer;font-size:15px;padding:8px 4px;min-height:44px;font-family:inherit;}
 
   /* breathing */
   .breath{position:fixed;inset:0;z-index:12;display:none;flex-direction:column;align-items:center;justify-content:center;gap:36px;
@@ -196,14 +198,28 @@
         <button class="navbtn" id="btnShuffle" aria-label="Shuffle mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4l3 3-3 3"/><path d="M3 7h4c3 0 4 10 7 10h4"/><path d="M18 14l3 3-3 3"/><path d="M3 17h4c1.6 0 2.6-1.8 3.6-3.8"/></svg></button>
         <button class="navbtn" id="btnBreathe" aria-label="Breathing pacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity=".5"/></svg></button>
         <button class="navbtn" id="btnTimer" aria-label="Sleep timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg></button>
-        <button class="navbtn" id="btnPresets" aria-label="Saved mixes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 4h12v17l-6-3.5L6 21z"/></svg></button>
       </div>
     </div>
     <div class="subtitle" id="status">Nothing playing</div>
+    <div class="seg tabs" id="tabs">
+      <button id="tabMixes" aria-pressed="false">Mixes</button>
+      <button id="tabSounds" aria-pressed="true">Sounds</button>
+    </div>
   </header>
 
   <div class="content">
-    <div class="grid" id="grid"></div>
+    <div class="view" id="viewMixes">
+      <div class="saverow">
+        <input id="presetName" type="text" placeholder="Name this mix" maxlength="28"/>
+        <button class="savebtn" id="savePreset">Save</button>
+      </div>
+      <button class="linkbtn" id="shareMix">Share current mix</button>
+      <div class="grouphdr" style="margin-top:14px">Saved mixes</div>
+      <div id="mixlist"></div>
+    </div>
+    <div class="view on" id="viewSounds">
+      <div class="grid" id="grid"></div>
+    </div>
   </div>
 
   <div class="dock">
@@ -217,16 +233,6 @@
   </div>
 
   <div class="scrim" id="scrim"></div>
-  <div class="sheet" id="sheet" role="dialog" aria-label="Saved mixes" aria-modal="true">
-    <div class="grabber"></div>
-    <h2>Saved Mixes</h2>
-    <div class="saverow">
-      <input id="presetName" type="text" placeholder="Name this mix" maxlength="28"/>
-      <button class="savebtn" id="savePreset">Save</button>
-    </div>
-    <button class="linkbtn" id="shareMix">Share current mix</button>
-    <div class="plist" id="plist"></div>
-  </div>
 
   <div class="sheet" id="timerSheet" role="dialog" aria-label="Sleep timer" aria-modal="true">
     <div class="grabber"></div>
@@ -304,8 +310,7 @@
   function updateAmbient(){let r=0,g=0,b=0,w=0;
     SOUNDS.forEach(({key})=>{const L=layers[key];if(L.active){const c=RGB[key],wt=0.4+L.level;r+=c[0]*wt;g+=c[1]*wt;b+=c[2]*wt;w+=wt;}});
     if(w){r=Math.round(r/w);g=Math.round(g/w);b=Math.round(b/w);
-      const aA=matchMedia("(prefers-color-scheme: light)").matches?0.15:0.30;
-      ambient.style.background=`radial-gradient(130% 85% at 50% -12%, rgba(${r},${g},${b},${aA}), transparent 68%)`;
+      ambient.style.background=`radial-gradient(130% 85% at 50% -12%, rgba(${r},${g},${b},.30), transparent 68%)`;
       ambient.style.opacity=playing?"1":".4";}
     else ambient.style.opacity="0";}
 
@@ -616,25 +621,39 @@
       if(on)setLevel(s.key,0.4+Math.random()*0.4);else setLevel(s.key,L.level);});
     mixName=null;if(!playing){setPlaying(true);startFromSilence();}reconcile();});
 
-  const scrim=document.getElementById("scrim"),sheet=document.getElementById("sheet"),plist=document.getElementById("plist"),presetName=document.getElementById("presetName");
-  const openSheet=()=>{renderPresets();scrim.classList.add("open");sheet.classList.add("open");};
-  const closeSheet=()=>{scrim.classList.remove("open");sheet.classList.remove("open");};
-  document.getElementById("btnPresets").addEventListener("click",openSheet);scrim.addEventListener("click",()=>{closeSheet();closeTimer();});
+  const scrim=document.getElementById("scrim"),mixlist=document.getElementById("mixlist"),presetName=document.getElementById("presetName");
+  scrim.addEventListener("click",()=>closeTimer());
   function getPresets(){return store.get("hush.presets")||[];}
-  function renderPresets(){const list=getPresets();
-    if(!list.length){plist.innerHTML='<div class="empty">No saved mixes yet. Build a mix, name it, and tap Save.</div>';return;}
-    plist.innerHTML="";list.forEach((p,idx)=>{
-      const names=Object.keys(p.layers).filter(k=>p.layers[k].active).map(labelOf).join(", ")||"empty";
-      const row=document.createElement("div");row.className="pitem";
-      row.innerHTML=`<div class="pname"><div class="t">${escapeHtml(p.name)}</div><div class="s">${escapeHtml(names)}</div></div><button class="del" aria-label="Delete">Delete</button>`;
-      row.querySelector(".pname").addEventListener("click",()=>{applyPreset(p);closeSheet();});
-      row.querySelector(".del").addEventListener("click",()=>{const l=getPresets();l.splice(idx,1);store.set("hush.presets",l);renderPresets();});
-      plist.appendChild(row);});}
+  function renderMixes(){const list=getPresets();
+    if(!list.length){mixlist.innerHTML='<div class="empty">No saved mixes yet.<br>Build one on the Sounds tab, then save it here.</div>';return;}
+    mixlist.innerHTML="";list.forEach((p,idx)=>{
+      const keys=Object.keys(p.layers).filter(k=>p.layers[k].active&&COLORS[k]);
+      const dots=keys.map(k=>`<i style="background:${COLORS[k]}"></i>`).join("");
+      const row=document.createElement("div");row.className="mixitem";
+      row.innerHTML=`<div class="mixmain"><div class="mixname">${escapeHtml(p.name)}</div>
+        <div class="mixdots">${dots}<span>${keys.length} sound${keys.length===1?"":"s"}</span></div></div>
+        <button class="mixplay" aria-label="Play ${escapeHtml(p.name)}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="mixdel" aria-label="Delete">Delete</button>`;
+      if(p.name===mixName)row.querySelector(".mixname").style.color="var(--tint)";
+      const load=()=>{applyPreset(p);renderMixes();};
+      row.querySelector(".mixmain").addEventListener("click",load);
+      row.querySelector(".mixplay").addEventListener("click",load);
+      row.querySelector(".mixdel").addEventListener("click",()=>{const l=getPresets();l.splice(idx,1);store.set("hush.presets",l);renderMixes();});
+      mixlist.appendChild(row);});}
+
+  const tabMixes=document.getElementById("tabMixes"),tabSounds=document.getElementById("tabSounds"),
+        viewMixes=document.getElementById("viewMixes"),viewSounds=document.getElementById("viewSounds");
+  function setTab(t){const m=t==="mixes";
+    viewMixes.classList.toggle("on",m);viewSounds.classList.toggle("on",!m);
+    tabMixes.setAttribute("aria-pressed",m?"true":"false");tabSounds.setAttribute("aria-pressed",m?"false":"true");
+    if(m)renderMixes();}
+  tabMixes.addEventListener("click",()=>setTab("mixes"));
+  tabSounds.addEventListener("click",()=>setTab("sounds"));
   document.getElementById("savePreset").addEventListener("click",()=>{
     const name=(presetName.value||"").trim()||("Mix "+(getPresets().length+1));
     const snap={name,vol:userVol,layers:{}};
     SOUNDS.forEach(s=>{const L=layers[s.key];snap.layers[s.key]={active:L.active,level:L.level};});
-    const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";renderPresets();mixName=name;updateMediaMeta();showToast("Saved “"+name+"”");});
+    const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";mixName=name;renderMixes();updateMediaMeta();showToast("Saved “"+name+"”");});
   function mixUrl(){const p=new URLSearchParams();
     SOUNDS.forEach(s=>{const L=layers[s.key];if(L.active)p.set(s.key,Math.round(L.level*100));});
     p.set("v",Math.round(userVol*100));if(mixName)p.set("n",mixName);
@@ -698,13 +717,13 @@
 
   // swipe the sheet down to dismiss (ignores drags on lists/inputs/buttons so scrolling still works)
   function attachSheetSwipe(sheetEl,closeFn){let y0=null;
-    sheetEl.addEventListener("pointerdown",e=>{if(e.target.closest("input,button,.plist,.sellist"))return;
+    sheetEl.addEventListener("pointerdown",e=>{if(e.target.closest("input,button,.sellist"))return;
       y0=e.clientY;sheetEl.style.transition="none";try{sheetEl.setPointerCapture(e.pointerId);}catch(_){}});
     sheetEl.addEventListener("pointermove",e=>{if(y0==null)return;const dy=Math.max(0,e.clientY-y0);sheetEl.style.transform="translateY("+dy+"px)";});
     const up=e=>{if(y0==null)return;const dy=Math.max(0,e.clientY-y0);y0=null;sheetEl.style.transition="";sheetEl.style.transform="";if(dy>80)closeFn();};
     sheetEl.addEventListener("pointerup",up);
     sheetEl.addEventListener("pointercancel",()=>{y0=null;sheetEl.style.transition="";sheetEl.style.transform="";});}
-  attachSheetSwipe(sheet,closeSheet);attachSheetSwipe(timerSheet,closeTimer);
+  attachSheetSwipe(timerSheet,closeTimer);
 
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden) return;
@@ -722,9 +741,11 @@
     SOUNDS.forEach(s=>{const d=p.layers[s.key];if(!d)return;const L=layers[s.key];
       L.active=!!d.active;L.tile.setAttribute("aria-pressed",L.active?"true":"false");setLevel(s.key,d.level??.6);});
     renderStatus();updateAmbient();})();
+  let sharedMix=false;
   (function fromHash(){if(location.hash.length<2)return;
     try{const p=new URLSearchParams(location.hash.slice(1));
       if(!SOUNDS.some(s=>p.has(s.key)))return;
+      sharedMix=true;
       SOUNDS.forEach(s=>{const L=layers[s.key];const has=p.has(s.key);
         L.active=has;L.tile.setAttribute("aria-pressed",has?"true":"false");
         if(has)setLevel(s.key,Math.min(100,Math.max(0,parseInt(p.get(s.key),10)||60))/100);else setLevel(s.key,L.level);});
@@ -732,6 +753,8 @@
       mixName=p.get("n")||null;
       history.replaceState(null,"",location.pathname+location.search);
       renderStatus();updateAmbient();persistState();showToast("Mix loaded — tap play");}catch(e){}})();
+  // start on Mixes when there are saved mixes; a shared link shows its sounds instead
+  setTab(sharedMix?"sounds":(getPresets().length?"mixes":"sounds"));
 
   // --- offline app shell ---
   if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
