@@ -108,14 +108,7 @@
   .playbtn:focus-visible{outline:2px solid var(--tint);outline-offset:3px;}
   .i-pause{display:none;}
   body.playing .i-play{display:none;}body.playing .i-pause{display:block;}
-  .spk{color:var(--label3);display:grid;place-items:center;flex:0 0 auto;}
-  .spk svg{width:18px;height:18px;}
 
-  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:30px;background:transparent;cursor:pointer;}
-  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--tint) var(--p,60%),var(--fill) var(--p,60%));}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:27px;height:27px;border-radius:50%;margin-top:-11.5px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3),0 0 .5px rgba(0,0,0,.2);}
-  input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:var(--fill);}
-  input[type=range]::-moz-range-thumb{width:27px;height:27px;border:none;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);}
 
   /* presets sheet */
   .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.3s;z-index:10;}
@@ -180,10 +173,8 @@
   .selrow .ck{color:var(--tint);opacity:0;display:grid;place-items:center;}
   .selrow .ck svg{width:18px;height:18px;}
   .selrow[aria-selected="true"] .ck{opacity:1;}
-  .dockmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
-  .volrow{display:flex;align-items:center;gap:9px;}
-  .volrow .spk svg{width:15px;height:15px;}
-  .docktitle{font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:0 2px;}
+  .dockmid{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;}
+  .docktitle{font-size:15px;font-weight:600;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:0 2px;}
   body:not(.playing) .docktitle{color:var(--label2);font-weight:500;}
   #btnInstall{display:none;}
   #btnInstall.show{display:grid;}
@@ -258,11 +249,6 @@
     </button>
     <div class="dockmid">
       <div class="docktitle" id="dockTitle">Nothing playing</div>
-      <div class="volrow">
-        <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/></svg></span>
-        <input type="range" id="vol" min="0" max="100" value="60" aria-label="Volume" />
-        <span class="spk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6 7 9H4v6h3l4 3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg></span>
-      </div>
     </div>
   </div>
 
@@ -298,7 +284,7 @@
   // debounced snapshot of the current mix so the app reopens where it left off
   let saveTO=null;
   function persistState(){clearTimeout(saveTO);saveTO=setTimeout(()=>{
-    const snap={vol:userVol,name:mixName,layers:{}};
+    const snap={name:mixName,layers:{}};
     SOUNDS.forEach(s=>{const L=layers[s.key];snap.layers[s.key]={active:L.active,level:L.level};});
     store.set("hush.last",snap);},250);}
 
@@ -343,7 +329,8 @@
       ambient.style.opacity=playing?"1":".4";}
     else ambient.style.opacity="0";}
 
-  let ctx=null,master=null,streamOut=null,playing=false,userVol=0.60,mixName=null;
+  const MASTER_VOL=.8;  // fixed app gain — overall loudness is the device volume's job
+  let ctx=null,master=null,streamOut=null,playing=false,mixName=null;
   const buffers={};const layers={};
 
   function ensureCtx(){
@@ -574,7 +561,7 @@
 
   function setPlaying(v){playing=v;document.body.classList.toggle("playing",playing);
     master_btn.setAttribute("aria-label",playing?"Pause":"Play");}
-  function startFromSilence(){ensureCtx();master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0.0001,ctx.currentTime);ramp(master.gain,userVol,1.6);}
+  function startFromSilence(){ensureCtx();master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(0.0001,ctx.currentTime);ramp(master.gain,MASTER_VOL,1.6);}
 
   function setLevel(key,v){const L=layers[key];v=Math.max(0,Math.min(1,v));L.level=v;
     L.tile.style.setProperty("--lvl",(v*100)+"%");
@@ -621,14 +608,11 @@
       else if(e.key==="Enter"||e.key===" "){e.preventDefault();toggle(s.key);}});
   }
 
-  const master_btn=document.getElementById("master"),vol=document.getElementById("vol"),statusEl=document.getElementById("status");
+  const master_btn=document.getElementById("master"),statusEl=document.getElementById("status");
   const btnTimer=document.getElementById("btnTimer");
   master_btn.addEventListener("click",()=>{if(!SOUNDS.some(s=>layers[s.key].active))return;
     if(playing){setPlaying(false);clearTimer();reconcile();}
     else{setPlaying(true);startFromSilence();reconcile();}});
-  vol.addEventListener("input",e=>{userVol=parseInt(e.target.value,10)/100;vol.style.setProperty("--p",(userVol*100)+"%");
-    if(master)ramp(master.gain,userVol,0.08);persistState();});
-  vol.style.setProperty("--p","60%");
   const dockTitle=document.getElementById("dockTitle");
   function renderStatus(){const count=SOUNDS.filter(s=>layers[s.key].active).length;master_btn.disabled=count===0;
     let txt=count===0?"Nothing playing":count+(count===1?" sound":" sounds")+" · "+(playing?"Playing":"Paused");
@@ -720,19 +704,18 @@
   tabSounds.addEventListener("click",()=>setTab("sounds"));
   document.getElementById("savePreset").addEventListener("click",()=>{
     const name=(presetName.value||"").trim()||("Mix "+(getPresets().length+1));
-    const snap={name,vol:userVol,layers:{}};
+    const snap={name,layers:{}};
     SOUNDS.forEach(s=>{const L=layers[s.key];snap.layers[s.key]={active:L.active,level:L.level};});
     const l=getPresets();l.unshift(snap);store.set("hush.presets",l);presetName.value="";mixName=name;renderMixes();updateMediaMeta();showToast("Saved “"+name+"”");});
   function mixUrl(p){const q=new URLSearchParams();
     Object.keys(p.layers||{}).forEach(k=>{const d=p.layers[k];if(d&&d.active&&COLORS[k])q.set(k,Math.round((d.level??.6)*100));});
-    if(typeof p.vol==="number")q.set("v",Math.round(p.vol*100));if(p.name)q.set("n",p.name);
+    if(p.name)q.set("n",p.name);
     return location.origin+location.pathname+"#"+q.toString();}
   async function shareMixLink(p){const url=mixUrl(p);
     try{if(navigator.share){await navigator.share({title:"Hush mix",url});return;}}catch(e){if(e&&e.name==="AbortError")return;}
     try{await navigator.clipboard.writeText(url);showToast("Link copied");}catch(e){showToast(url);}}
   function applyPreset(p){
     mixName=p.name;  // Now Playing shows the saved mix's name
-    if(typeof p.vol==="number"){userVol=p.vol;vol.value=Math.round(userVol*100);vol.style.setProperty("--p",(userVol*100)+"%");}
     SOUNDS.forEach(s=>{const d=p.layers[s.key]||{active:false,level:.6};const L=layers[s.key];
       L.active=!!d.active;L.tile.setAttribute("aria-pressed",L.active?"true":"false");setLevel(s.key,d.level??.6);});
     if(SOUNDS.some(s=>layers[s.key].active)){setPlaying(true);startFromSilence();}reconcile();}
@@ -761,7 +744,7 @@
     store.set("hush.timerEndsAt",timerEndsAt);
     tick=setInterval(()=>renderStatus(),500);
     fireTO=setTimeout(()=>{if(master){const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(.0001,t+8);}
-      setTimeout(()=>{setPlaying(false);reconcile();if(master)master.gain.value=userVol;clearTimer();},8200);},timerEndsAt-now);}
+      setTimeout(()=>{setPlaying(false);reconcile();if(master)master.gain.value=MASTER_VOL;clearTimer();},8200);},timerEndsAt-now);}
   function setTimer(m){timerMin=m;pendingEndsAt=0;store.set("hush.timerMin",m);clearTimer();if(playing&&timerMin>0)startTimer();renderStatus();}
   function renderTimerList(){sellist.innerHTML="";TIMER_OPTS.forEach(o=>{const r=document.createElement("div");
     r.className="selrow";r.setAttribute("role","button");r.setAttribute("aria-selected",timerMin===o.m?"true":"false");
@@ -796,7 +779,6 @@
   timerMin=store.get("hush.timerMin")||0;
   pendingEndsAt=store.get("hush.timerEndsAt")||0;if(pendingEndsAt<=Date.now())pendingEndsAt=0;
   (function restoreLast(){const p=store.get("hush.last");if(!p||!p.layers)return;
-    if(typeof p.vol==="number"){userVol=p.vol;vol.value=Math.round(userVol*100);vol.style.setProperty("--p",(userVol*100)+"%");}
     mixName=p.name||null;
     SOUNDS.forEach(s=>{const d=p.layers[s.key];if(!d)return;const L=layers[s.key];
       L.active=!!d.active;L.tile.setAttribute("aria-pressed",L.active?"true":"false");setLevel(s.key,d.level??.6);});
@@ -809,7 +791,6 @@
       SOUNDS.forEach(s=>{const L=layers[s.key];const has=p.has(s.key);
         L.active=has;L.tile.setAttribute("aria-pressed",has?"true":"false");
         if(has)setLevel(s.key,Math.min(100,Math.max(0,parseInt(p.get(s.key),10)||60))/100);else setLevel(s.key,L.level);});
-      if(p.has("v")){userVol=Math.min(100,Math.max(0,parseInt(p.get("v"),10)||60))/100;vol.value=Math.round(userVol*100);vol.style.setProperty("--p",(userVol*100)+"%");}
       mixName=p.get("n")||null;
       history.replaceState(null,"",location.pathname+location.search);
       renderStatus();updateAmbient();persistState();showToast("Mix loaded — tap play");}catch(e){}})();
